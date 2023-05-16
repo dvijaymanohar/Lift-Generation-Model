@@ -1,7 +1,8 @@
 /**
  * @file lift_gen.c
  * @author dvijaymanohar@gmail.com (Vijaya Manohar Dogiparthi)
- * @brief
+ * @brief C model for the lift generation of an airfoil based on the Bernoulli
+ * equation
  * @version 0.1
  * @date 2023-05-15
  *
@@ -22,8 +23,8 @@ struct airfoil_geometry {
   double chord_length;    // meters
   double airfoil_length;  // meters
   double angle_of_attack; // degrees
-  double camber;    // Camber is dimensionless value described as a percentage of the
-                    // chord length
+  double camber; // Camber is dimensionless value described as a percentage of
+                 // the chord length
   double thickness; // fraction of chord length
 };
 
@@ -42,7 +43,7 @@ struct fluid_properties {
 };
 
 struct parameter_uncertainties {
-  // Uniform distribution: Tolerance of 2%
+  // Parameters using uniform distribution
   double chord_length;    // meters
   double airfoil_length;  // meters
   double angle_of_attack; // degrees
@@ -52,7 +53,7 @@ struct parameter_uncertainties {
   double pitot_elevation; // elevation of Pitot tube above sea level (m)
   double elevation;       // elevation above sea level (m)
 
-  // Non uniform emperical distribution
+  // Parameters using non uniform emperical distribution
 
   // Pa, +/- 1000 Pa (source:
   // https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
@@ -151,12 +152,8 @@ static double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
 // Function to calculate lift force using the Bernoulli equation
 static double calc_lift_force(double cl, double rho, double v, double chord,
                               double length) {
-  // https://www.grc.nasa.gov/www/k-12/rocket/lifteq.html
-  // lift_force = Cl * WingArea * .5 * density * Velocity ^ 2
-
-  // https: // www.ajdesigner.com/phpwinglift/wing_lift_equation_force.php
-
-  // Bernoulli's equation: https://web.mit.edu/16.00/www/aec/flight.html
+  // Bernoulli's equation
+  // lift_force = Lift-Coeff * WingArea * .5 * density * Velocity ^ 2
 
   double lift_force = cl * chord * length * 0.5 * rho * v * v;
 
@@ -189,6 +186,8 @@ static double calc_wind_speed_pitotTube(const double pitot_pressure,
 
 int main(int argc, char *argv[]) {
   struct parameter_uncertainties parameters = {0};
+
+  // Load the parameter values.
   load_parameters(&parameters);
 
   // Define the airfoil geometry.
@@ -203,7 +202,7 @@ int main(int argc, char *argv[]) {
 
   // Define the fluid properties.
   struct fluid_properties fluid_cfg = {
-      .pressure = parameters.pressure,       // atmospheric pressure
+      .pressure = parameters.pressure,       // atmospheric pressure (Pa)
       .temperature = parameters.temperature, // ambient temperature (Kelvin)
       .elevation = parameters.elevation,     // elevation above sea level (m)
       .humidity = parameters.humidity,       // relative humidity
