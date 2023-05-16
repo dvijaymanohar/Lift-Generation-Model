@@ -19,8 +19,8 @@
 
 // Define the airfoil geometry.
 struct airfoil_geometry {
-  double chord_length; // meters
-  double airfoil_length;
+  double chord_length;    // meters
+  double airfoil_length;  // meters
   double angle_of_attack; // degrees
   double camber;
   double thickness; // fraction of chord length
@@ -46,7 +46,6 @@ struct parameter_uncertainties {
   double camber;
   double thickness;
   double angle_of_attack;
-  double leading_edge_radius;
   double airfoil_length;
   double pitot_elevation; // elevation of Pitot tube above sea level (m)
   double elevation;       // elevation above sea level (m)
@@ -70,38 +69,49 @@ struct parameter_uncertainties {
   double humidity; // relative humidity
 };
 
-static void
-loadInputs(double *  G, double *  M, double *  Rs, double *  b, double *  gamma, double *  phi)
-{
-	double empiricalTaylorFactorValues[] = {
-						3.2,
-						3.9,
-						4.1,
-						3.2,
-						3.8,
-						3.8,
-						2.1,
-						3.0,
-						1.9,
-						3.9,
-						2.3,
-						2.2,
-						3.2,
-						2.2,
-						3.9,
-						2.2,
-						1.9,
-						3.2,
-						3.9,
-						3.1,
-					};
+static void load_parameters(struct parameter_uncertainties *parameters) {
+  // Pa, +/- 1000 Pa (source:
+  // https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
+  double empiricalPitotPressureValues[] = {
+      895500, 896500, 898648,
+      900200, 902020, 904567}; // pressure measured by Pitot tube (Pa)
 
-	*M		= libUncertainDoubleDistFromSamples(empiricalTaylorFactorValues, sizeof(empiricalTaylorFactorValues)/sizeof(double));
-	*G		= libUncertainDoubleUniformDist(6E10, 8E10);
-	*Rs		= libUncertainDoubleMixture(libUncertainDoubleGaussDist(1E-8, 2E-9), libUncertainDoubleGaussDist(3E-8, 2E-9), 0.5);
-	*b		= 2.54E-10;
-	*gamma	= libUncertainDoubleUniformDist(0.15, 0.25);
-	*phi	= libUncertainDoubleUniformDist(0.3, 0.45);
+  // Pa, +/- 1000 Pa (source:
+  // https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
+  double empiricalPressureValues[] = {895300, 896100, 898548, 900108,
+                                      902000, 904167}; // atmospheric pressure
+
+  // deg C, +/- 1 deg C (source:
+  // https://www.engineeringtoolbox.com/air-properties-d_156.html)
+  double empiricalTemperatureValues[] = {278.48, 279.54, 281.65, 283.14,
+                                         283.56, 284.78};
+  // ambient temperature (Kelvin)
+
+  // %, +/- 5% (source:
+  // https://www.engineeringtoolbox.com/humidity-ratio-d_585.html)
+  double empiricalHumidityValues[] = {0.34, 0.38, 0.41,
+                                      0.54, 0.6,  0.65}; // relative humidity
+
+  parameters->pitot_pressure = libUncertainDoubleDistFromSamples(
+      empiricalPitotPressureValues,
+      sizeof(empiricalPitotPressureValues) / sizeof(double));
+  parameters->pressure = libUncertainDoubleDistFromSamples(
+      empiricalPressureValues,
+      sizeof(empiricalPressureValues) / sizeof(double));
+  parameters->temperature = libUncertainDoubleDistFromSamples(
+      empiricalTemperatureValues,
+      sizeof(empiricalTemperatureValues) / sizeof(double));
+  parameters->humidity = libUncertainDoubleDistFromSamples(
+      empiricalHumidityValues,
+      sizeof(empiricalHumidityValues) / sizeof(double));
+
+  parameters->chord_length = libUncertainDoubleUniformDist(1.0, 1.01);
+  parameters->camber = libUncertainDoubleUniformDist(0.05, 0.06);
+  parameters->thickness = libUncertainDoubleUniformDist(0.15, 0.158);
+  parameters->angle_of_attack = libUncertainDoubleUniformDist(4.0, 4.1);
+  parameters->airfoil_length = libUncertainDoubleUniformDist(10.0, 10.05);
+  parameters->pitot_elevation = libUncertainDoubleUniformDist(110.0, 111.0);
+  parameters->elevation = libUncertainDoubleUniformDist(100.0, 101.0);
 }
 
 // Function to calculate the lift coefficient
@@ -138,7 +148,7 @@ static double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
 
 // Function to calculate lift force using the Bernoulli equation
 static double calc_lift_force(double cl, double rho, double v, double chord,
-                       double length) {
+                              double length) {
   // https://www.grc.nasa.gov/www/k-12/rocket/lifteq.html
   // lift_force = Cl * WingArea * .5 * density * Velocity ^ 2
 
@@ -154,7 +164,7 @@ static double calc_lift_force(double cl, double rho, double v, double chord,
 // Function to calculate the air density based on the ambient temperature,
 // humidity and elevation
 static double calc_air_density(const double temperature, const double pressure,
-                        const double humidity, const double elevation) {
+                               const double humidity, const double elevation) {
   const double temperatureLapseRate = 0.0065; // K/m
 
   double T = temperature - temperatureLapseRate * elevation;
@@ -166,8 +176,8 @@ static double calc_air_density(const double temperature, const double pressure,
 
 // // Function to calculate the fluid velocity around the airfoil
 static double calc_wind_speed_pitotTube(const double pitot_pressure,
-                       const double static_pressure,
-                       const double fluid_density) {
+                                        const double static_pressure,
+                                        const double fluid_density) {
   double dynamic_pressure = pitot_pressure - static_pressure;
 
   double wind_speed = sqrt(2.0 * dynamic_pressure / fabs(fluid_density));
@@ -211,8 +221,8 @@ int main(int argc, char *argv[]) {
       atmosphere_cfg.temperature, pitot_tube_cfg.pitot_pressure,
       atmosphere_cfg.humidity, pitot_tube_cfg.pitot_elevation);
 
-  double wind_speed = calc_wind_speed_pitotTube(pitot_tube_cfg.pitot_pressure,
-                                      atmosphere_cfg.pressure, air_density);
+  double wind_speed = calc_wind_speed_pitotTube(
+      pitot_tube_cfg.pitot_pressure, atmosphere_cfg.pressure, air_density);
 
   double lift_force =
       calc_lift_force(lift_coeff, air_density, wind_speed,
@@ -224,27 +234,5 @@ int main(int argc, char *argv[]) {
   printf("Lift coefficient: %lf\n", lift_coeff);
   printf("Lift force: %lf N\n", lift_force);
 
-
-  {
-    double	G, M, Rs, b, gamma, phi, sigmaCMpa;
-
-
-    loadInputs(&G, &M, &Rs, &b, &gamma, &phi);
-
-    /*
-    *                    ⎛    _________________    ⎞
-    *       ⎛ M ⋅ γ  ⎞   ⎜   ╱8.0 ⋅ γ ⋅ φ ⋅ Rs     ⎟
-    *  σ  = ⎜─────── ⎟ ⋅ ⎜  ╱ ───────────────── - φ⎟
-    *   c   ⎝2.0 ⋅ b ⎠   ⎝╲╱  π ⋅ G ⋅ pow(b, 2)    ⎠
-    */
-    sigmaCMpa = ((M*gamma)/(2.0*b))*(sqrt((8.0*gamma*phi*Rs)/(M_PI*G*pow(b, 2))) - phi)/1000000;
-
-    printf("Alloy strength (σc)\t\t= %.1E MPa\n", sigmaCMpa);
-  }
-
   return 0;
 }
-
-
-
-
