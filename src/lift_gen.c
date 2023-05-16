@@ -247,8 +247,6 @@ int main(int argc, char *argv[]) {
     sigmaCMpa = ((M*gamma)/(2.0*b))*(sqrt((8.0*gamma*phi*Rs)/(M_PI*G*pow(b, 2))) - phi)/1000000;
 
     printf("Alloy strength (σc)\t\t= %.1E MPa\n", sigmaCMpa);
-
-    VMD
   }
 
   return 0;
