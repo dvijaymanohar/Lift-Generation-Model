@@ -17,22 +17,23 @@
 
 #define PI 3.14159265358979323846
 
-// Define the airfoil geometry.
+// Airfoil geometry parameters
 struct airfoil_geometry {
   double chord_length;    // meters
   double airfoil_length;  // meters
   double angle_of_attack; // degrees
-  double camber;
+  double camber;    // Camber is dimensionless value described as a percentage of the
+                    // chord length
   double thickness; // fraction of chord length
 };
 
-// Define the Pitot tube parameters.
+// Pitot tube parameters.
 struct pitot_tube_properties {
   double pitot_pressure;  // pressure measured by Pitot tube (Pa)
   double pitot_elevation; // elevation of Pitot tube above sea level (m)
 };
 
-// Define the fluid properties.
+// Fluid properties.
 struct fluid_properties {
   double pressure;    // atmospheric pressure
   double temperature; // ambient temperature (Kelvin)
@@ -42,11 +43,12 @@ struct fluid_properties {
 
 struct parameter_uncertainties {
   // Uniform distribution: Tolerance of 2%
-  double chord_length;
-  double camber;
-  double thickness;
-  double angle_of_attack;
-  double airfoil_length;
+  double chord_length;    // meters
+  double airfoil_length;  // meters
+  double angle_of_attack; // degrees
+  double camber;    // Camber is dimensionless value or as a percentage of the
+                    // chord length
+  double thickness; // fraction of chord length
   double pitot_elevation; // elevation of Pitot tube above sea level (m)
   double elevation;       // elevation above sea level (m)
 
