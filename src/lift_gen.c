@@ -83,8 +83,8 @@ static void load_parameters(struct parameter_uncertainties *parameters) {
 
   // deg C, +/- 1 deg C (source:
   // https://www.engineeringtoolbox.com/air-properties-d_156.html)
-  double empiricalTemperatureValues[] = {278.48, 279.54, 281.65, 283.14,
-                                         283.56, 284.78};
+  double empiricalTemperatureValues[] = {278.48, 279.54, 281.65,
+                                         283.14, 283.56, 284.78};
   // ambient temperature (Kelvin)
 
   // %, +/- 5% (source:
@@ -186,43 +186,45 @@ static double calc_wind_speed_pitotTube(const double pitot_pressure,
 }
 
 int main(int argc, char *argv[]) {
+  struct parameter_uncertainties parameters = {0};
+  load_parameters(&parameters);
+
   // Define the airfoil geometry.
   struct airfoil_geometry airfoil_cfg = {
-      .chord_length = 1.0,
-      .airfoil_length = 10, // airfoil length (m)
-      .angle_of_attack = 4, // angle of attack (degrees). aka alpha
-      .camber = 0.05,
-      .thickness = 0.15,
+      .chord_length = parameters.chord_length,
+      .airfoil_length = parameters.airfoil_length, // airfoil length (m)
+      .angle_of_attack =
+          parameters.angle_of_attack, // angle of attack (degrees). aka alpha
+      .camber = parameters.camber,
+      .thickness = parameters.thickness,
   };
 
   // Define the fluid properties.
-  struct fluid_properties atmosphere_cfg = {
-      .pressure = 101325.0, // atmospheric pressure
-      .temperature = 281.5, // ambient temperature (Kelvin)
-      .elevation = 100,     // elevation above sea level (m)
-      .humidity = 0.5,      // relative humidity
+  struct fluid_properties fluid_cfg = {
+      .pressure = parameters.pressure,       // atmospheric pressure
+      .temperature = parameters.temperature, // ambient temperature (Kelvin)
+      .elevation = parameters.elevation,     // elevation above sea level (m)
+      .humidity = parameters.humidity,       // relative humidity
   };
 
   // Define the Pitot tube properties.
   struct pitot_tube_properties pitot_tube_cfg = {
-      .pitot_pressure = 110000.0, // pressure measured by Pitot tube (Pa)
-      .pitot_elevation = 110.0,   // elevation of Pitot tube above sea level (m)
+      .pitot_pressure =
+          parameters.pitot_pressure, // pressure measured by Pitot tube (Pa)
+      .pitot_elevation =
+          parameters
+              .pitot_elevation, // elevation of Pitot tube above sea level (m)
   };
-
-  // Define environmental parameters and their measurement uncertainties
-  // double elevation = generate_elevation(500.0, 50.0); // meters above sea
-  // level double temperature = generate_temperature(15.0, 2.0); // Celsius
-  // double humidity = generate_humidity(50.0, 10.0);      // percentage
 
   // Calculations
   double lift_coeff = calculate_lift_coefficient(&airfoil_cfg);
 
-  double air_density = calc_air_density(
-      atmosphere_cfg.temperature, pitot_tube_cfg.pitot_pressure,
-      atmosphere_cfg.humidity, pitot_tube_cfg.pitot_elevation);
+  double air_density =
+      calc_air_density(fluid_cfg.temperature, pitot_tube_cfg.pitot_pressure,
+                       fluid_cfg.humidity, pitot_tube_cfg.pitot_elevation);
 
   double wind_speed = calc_wind_speed_pitotTube(
-      pitot_tube_cfg.pitot_pressure, atmosphere_cfg.pressure, air_density);
+      pitot_tube_cfg.pitot_pressure, fluid_cfg.pressure, air_density);
 
   double lift_force =
       calc_lift_force(lift_coeff, air_density, wind_speed,
