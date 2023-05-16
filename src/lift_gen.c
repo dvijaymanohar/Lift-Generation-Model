@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <uncertain.h>
 
 #define PI 3.14159265358979323846
 
@@ -39,7 +40,7 @@ struct fluid_properties {
   double humidity;    // relative humidity
 };
 
-struct parameter_uncertainties {
+static struct parameter_uncertainties {
   // Uniform distribution: Tolerance of 2%
   double chord_length;
   double camber;
@@ -69,8 +70,42 @@ struct parameter_uncertainties {
   double humidity; // relative humidity
 };
 
+static void
+loadInputs(double *  G, double *  M, double *  Rs, double *  b, double *  gamma, double *  phi)
+{
+	double empiricalTaylorFactorValues[] = {
+						3.2,
+						3.9,
+						4.1,
+						3.2,
+						3.8,
+						3.8,
+						2.1,
+						3.0,
+						1.9,
+						3.9,
+						2.3,
+						2.2,
+						3.2,
+						2.2,
+						3.9,
+						2.2,
+						1.9,
+						3.2,
+						3.9,
+						3.1,
+					};
+
+	*M		= libUncertainDoubleDistFromSamples(empiricalTaylorFactorValues, sizeof(empiricalTaylorFactorValues)/sizeof(double));
+	*G		= libUncertainDoubleUniformDist(6E10, 8E10);
+	*Rs		= libUncertainDoubleMixture(libUncertainDoubleGaussDist(1E-8, 2E-9), libUncertainDoubleGaussDist(3E-8, 2E-9), 0.5);
+	*b		= 2.54E-10;
+	*gamma	= libUncertainDoubleUniformDist(0.15, 0.25);
+	*phi	= libUncertainDoubleUniformDist(0.3, 0.45);
+}
+
 // Function to calculate the lift coefficient
-double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
+static double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
   double lift_coefficient;
   double camber_line;
   double dcp;
@@ -102,7 +137,7 @@ double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
 }
 
 // Function to calculate lift force using the Bernoulli equation
-double calc_lift_force(double cl, double rho, double v, double chord,
+static double calc_lift_force(double cl, double rho, double v, double chord,
                        double length) {
   // https://www.grc.nasa.gov/www/k-12/rocket/lifteq.html
   // lift_force = Cl * WingArea * .5 * density * Velocity ^ 2
@@ -118,7 +153,7 @@ double calc_lift_force(double cl, double rho, double v, double chord,
 
 // Function to calculate the air density based on the ambient temperature,
 // humidity and elevation
-double calc_air_density(const double temperature, const double pressure,
+static double calc_air_density(const double temperature, const double pressure,
                         const double humidity, const double elevation) {
   const double temperatureLapseRate = 0.0065; // K/m
 
@@ -130,7 +165,7 @@ double calc_air_density(const double temperature, const double pressure,
 }
 
 // Calculates the fluid velocity around the airfoil
-double calc_wind_speed(const double pitot_pressure,
+static double calc_wind_speed(const double pitot_pressure,
                        const double static_pressure,
                        const double fluid_density) {
   double dynamic_pressure = pitot_pressure - static_pressure;
@@ -141,7 +176,7 @@ double calc_wind_speed(const double pitot_pressure,
 }
 
 // Function to calculate wind speed using a Pitot tube
-double calc_wind_speed_pitotTube(double pTotal, double pStatic, double rho) {
+static double calc_wind_speed_pitotTube(double pTotal, double pStatic, double rho) {
   double deltaP = pTotal - pStatic;
   double windSpeed = sqrt((2.0 * deltaP) / rho);
   return windSpeed;
@@ -195,6 +230,26 @@ int main(int argc, char *argv[]) {
   printf("Wind speed: %lf m/s\n", wind_speed);
   printf("Lift coefficient: %lf\n", lift_coeff);
   printf("Lift force: %lf N\n", lift_force);
+
+
+  {
+    double	G, M, Rs, b, gamma, phi, sigmaCMpa;
+
+
+    loadInputs(&G, &M, &Rs, &b, &gamma, &phi);
+
+    /*
+    *                    ⎛    _________________    ⎞
+    *       ⎛ M ⋅ γ  ⎞   ⎜   ╱8.0 ⋅ γ ⋅ φ ⋅ Rs     ⎟
+    *  σ  = ⎜─────── ⎟ ⋅ ⎜  ╱ ───────────────── - φ⎟
+    *   c   ⎝2.0 ⋅ b ⎠   ⎝╲╱  π ⋅ G ⋅ pow(b, 2)    ⎠
+    */
+    sigmaCMpa = ((M*gamma)/(2.0*b))*(sqrt((8.0*gamma*phi*Rs)/(M_PI*G*pow(b, 2))) - phi)/1000000;
+
+    printf("Alloy strength (σc)\t\t= %.1E MPa\n", sigmaCMpa);
+
+    VMD
+  }
 
   return 0;
 }
