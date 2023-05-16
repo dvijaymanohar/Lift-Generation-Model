@@ -40,7 +40,7 @@ struct fluid_properties {
   double humidity;    // relative humidity
 };
 
-static struct parameter_uncertainties {
+struct parameter_uncertainties {
   // Uniform distribution: Tolerance of 2%
   double chord_length;
   double camber;
@@ -164,8 +164,8 @@ static double calc_air_density(const double temperature, const double pressure,
   return air_density;
 }
 
-// Calculates the fluid velocity around the airfoil
-static double calc_wind_speed(const double pitot_pressure,
+// // Function to calculate the fluid velocity around the airfoil
+static double calc_wind_speed_pitotTube(const double pitot_pressure,
                        const double static_pressure,
                        const double fluid_density) {
   double dynamic_pressure = pitot_pressure - static_pressure;
@@ -173,13 +173,6 @@ static double calc_wind_speed(const double pitot_pressure,
   double wind_speed = sqrt(2.0 * dynamic_pressure / fabs(fluid_density));
 
   return wind_speed;
-}
-
-// Function to calculate wind speed using a Pitot tube
-static double calc_wind_speed_pitotTube(double pTotal, double pStatic, double rho) {
-  double deltaP = pTotal - pStatic;
-  double windSpeed = sqrt((2.0 * deltaP) / rho);
-  return windSpeed;
 }
 
 int main(int argc, char *argv[]) {
@@ -218,7 +211,7 @@ int main(int argc, char *argv[]) {
       atmosphere_cfg.temperature, pitot_tube_cfg.pitot_pressure,
       atmosphere_cfg.humidity, pitot_tube_cfg.pitot_elevation);
 
-  double wind_speed = calc_wind_speed(pitot_tube_cfg.pitot_pressure,
+  double wind_speed = calc_wind_speed_pitotTube(pitot_tube_cfg.pitot_pressure,
                                       atmosphere_cfg.pressure, air_density);
 
   double lift_force =
@@ -251,3 +244,7 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+
+
+
