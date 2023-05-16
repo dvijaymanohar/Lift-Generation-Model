@@ -5,7 +5,7 @@ project(Lift-Generation-Model)
 set(CMAKE_C_STANDARD 11)
 
 # Add your source files
-set(SOURCES lift_gen.c)
+set(SOURCES src/lift_gen.c)
 
 # Create the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
