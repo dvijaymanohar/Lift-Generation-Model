@@ -1,4 +1,4 @@
-# lift_generation_model
+# lift-generation-model
 
 ## Introduction
 
