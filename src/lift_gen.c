@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <uncertain.h>
 
@@ -186,9 +187,10 @@ static double calc_wind_speed_pitotTube(const double pitot_pressure,
 int main(int argc, char *argv[]) {
   struct parameter_uncertainties parameters;
 
+  // Initialize the parameter uncertainty stucture 
   memset(&parameters, 0, sizeof(struct parameter_uncertainties));
 
-  // Load the parameter values.
+  // Load the parameter uncertainity values.
   load_parameters(&parameters);
 
   // Calculate lift coefficient
@@ -209,7 +211,7 @@ int main(int argc, char *argv[]) {
                                       parameters.airfoil_cfg.chord_length,
                                       parameters.airfoil_cfg.airfoil_length);
 
-  // Output
+  // Display the results
   printf("Air density: %lf kg/m^3\n", air_density);
   printf("Wind speed: %lf m/s\n", wind_speed);
   printf("Lift coefficient: %lf\n", lift_coeff);
