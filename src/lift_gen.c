@@ -43,33 +43,9 @@ struct fluid_properties {
 };
 
 struct parameter_uncertainties {
-  // Parameters using uniform distribution
-  double chord_length;    // meters
-  double airfoil_length;  // meters
-  double angle_of_attack; // degrees
-  double camber;    // Camber is dimensionless value or as a percentage of the
-                    // chord length
-  double thickness; // fraction of chord length
-  double pitot_elevation; // elevation of Pitot tube above sea level (m)
-  double elevation;       // elevation above sea level (m)
-
-  // Parameters using non uniform emperical distribution
-
-  // Pa, +/- 1000 Pa (source:
-  // https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
-  double pitot_pressure; // pressure measured by Pitot tube (Pa)
-
-  // Pa, +/- 1000 Pa (source:
-  // https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
-  double pressure; // atmospheric pressure
-
-  // deg C, +/- 1 deg C (source:
-  // https://www.engineeringtoolbox.com/air-properties-d_156.html)
-  double temperature; // ambient temperature (Kelvin)
-
-  // %, +/- 5% (source:
-  // https://www.engineeringtoolbox.com/humidity-ratio-d_585.html)
-  double humidity; // relative humidity
+  struct airfoil_geometry airfoil_cfg;
+  struct pitot_tube_properties pt_cfg;
+  struct fluid_properties fluid_cfg;
 };
 
 static void load_parameters(struct parameter_uncertainties *parameters) {
@@ -95,26 +71,31 @@ static void load_parameters(struct parameter_uncertainties *parameters) {
   double empiricalHumidityValues[] = {0.34, 0.38, 0.41,
                                       0.54, 0.6,  0.65}; // relative humidity
 
-  parameters->pitot_pressure = libUncertainDoubleDistFromSamples(
+  parameters->pt_cfg.pitot_pressure = libUncertainDoubleDistFromSamples(
       empiricalPitotPressureValues,
       sizeof(empiricalPitotPressureValues) / sizeof(double));
-  parameters->pressure = libUncertainDoubleDistFromSamples(
+  parameters->fluid_cfg.pressure = libUncertainDoubleDistFromSamples(
       empiricalPressureValues,
       sizeof(empiricalPressureValues) / sizeof(double));
-  parameters->temperature = libUncertainDoubleDistFromSamples(
+  parameters->fluid_cfg.temperature = libUncertainDoubleDistFromSamples(
       empiricalTemperatureValues,
       sizeof(empiricalTemperatureValues) / sizeof(double));
-  parameters->humidity = libUncertainDoubleDistFromSamples(
+  parameters->fluid_cfg.humidity = libUncertainDoubleDistFromSamples(
       empiricalHumidityValues,
       sizeof(empiricalHumidityValues) / sizeof(double));
 
-  parameters->chord_length = libUncertainDoubleUniformDist(1.0, 1.01);
-  parameters->camber = libUncertainDoubleUniformDist(0.05, 0.06);
-  parameters->thickness = libUncertainDoubleUniformDist(0.15, 0.158);
-  parameters->angle_of_attack = libUncertainDoubleUniformDist(4.0, 4.1);
-  parameters->airfoil_length = libUncertainDoubleUniformDist(10.0, 10.05);
-  parameters->pitot_elevation = libUncertainDoubleUniformDist(110.0, 111.0);
-  parameters->elevation = libUncertainDoubleUniformDist(100.0, 101.0);
+  parameters->airfoil_cfg.chord_length =
+      libUncertainDoubleUniformDist(1.0, 1.01);
+  parameters->airfoil_cfg.camber = libUncertainDoubleUniformDist(0.05, 0.06);
+  parameters->airfoil_cfg.thickness =
+      libUncertainDoubleUniformDist(0.15, 0.158);
+  parameters->airfoil_cfg.angle_of_attack =
+      libUncertainDoubleUniformDist(4.0, 4.1);
+  parameters->airfoil_cfg.airfoil_length =
+      libUncertainDoubleUniformDist(10.0, 10.05);
+  parameters->pt_cfg.pitot_elevation =
+      libUncertainDoubleUniformDist(110.0, 111.0);
+  parameters->fluid_cfg.elevation = libUncertainDoubleUniformDist(100.0, 101.0);
 }
 
 // Function to calculate the lift coefficient
@@ -152,7 +133,9 @@ static double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
 // Function to calculate lift force using the Bernoulli equation
 static double calc_lift_force(double cl, double rho, double v, double chord,
                               double length) {
-  // Bernoulli's equation
+  // Bernoulli's equation: https://web.mit.edu/16.00/www/aec/flight.html
+  // https://www.grc.nasa.gov/www/k-12/rocket/lifteq.html
+
   // lift_force = Lift-Coeff * WingArea * .5 * density * Velocity ^ 2
 
   double lift_force = cl * chord * length * 0.5 * rho * v * v;
@@ -190,46 +173,20 @@ int main(int argc, char *argv[]) {
   // Load the parameter values.
   load_parameters(&parameters);
 
-  // Define the airfoil geometry.
-  struct airfoil_geometry airfoil_cfg = {
-      .chord_length = parameters.chord_length,
-      .airfoil_length = parameters.airfoil_length, // airfoil length (m)
-      .angle_of_attack =
-          parameters.angle_of_attack, // angle of attack (degrees). aka alpha
-      .camber = parameters.camber,
-      .thickness = parameters.thickness,
-  };
-
-  // Define the fluid properties.
-  struct fluid_properties fluid_cfg = {
-      .pressure = parameters.pressure,       // atmospheric pressure (Pa)
-      .temperature = parameters.temperature, // ambient temperature (Kelvin)
-      .elevation = parameters.elevation,     // elevation above sea level (m)
-      .humidity = parameters.humidity,       // relative humidity
-  };
-
-  // Define the Pitot tube properties.
-  struct pitot_tube_properties pitot_tube_cfg = {
-      .pitot_pressure =
-          parameters.pitot_pressure, // pressure measured by Pitot tube (Pa)
-      .pitot_elevation =
-          parameters
-              .pitot_elevation, // elevation of Pitot tube above sea level (m)
-  };
-
   // Calculations
-  double lift_coeff = calculate_lift_coefficient(&airfoil_cfg);
+  double lift_coeff = calculate_lift_coefficient(&parameters.airfoil_cfg);
 
-  double air_density =
-      calc_air_density(fluid_cfg.temperature, pitot_tube_cfg.pitot_pressure,
-                       fluid_cfg.humidity, pitot_tube_cfg.pitot_elevation);
+  double air_density = calc_air_density(
+      parameters.fluid_cfg.temperature, parameters.pt_cfg.pitot_pressure,
+      parameters.fluid_cfg.humidity, parameters.pt_cfg.pitot_elevation);
 
-  double wind_speed = calc_wind_speed_pitotTube(
-      pitot_tube_cfg.pitot_pressure, fluid_cfg.pressure, air_density);
+  double wind_speed =
+      calc_wind_speed_pitotTube(parameters.pt_cfg.pitot_pressure,
+                                parameters.fluid_cfg.pressure, air_density);
 
-  double lift_force =
-      calc_lift_force(lift_coeff, air_density, wind_speed,
-                      airfoil_cfg.chord_length, airfoil_cfg.airfoil_length);
+  double lift_force = calc_lift_force(lift_coeff, air_density, wind_speed,
+                                      parameters.airfoil_cfg.chord_length,
+                                      parameters.airfoil_cfg.airfoil_length);
 
   // Output
   printf("Air density: %lf kg/m^3\n", air_density);
