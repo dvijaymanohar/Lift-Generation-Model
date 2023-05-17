@@ -20,9 +20,9 @@
 
 // Airfoil geometry parameters
 struct airfoil_geometry {
-  double chord_length;    // meters
-  double airfoil_length;  // meters
-  double angle_of_attack; // degrees
+  double chord_length;    // Units: meters
+  double airfoil_length;  // Units: meters
+  double angle_of_attack; // Units: degrees
   double camber; // Camber is dimensionless value described as a percentage of
                  // the chord length
   double thickness; // fraction of chord length
@@ -30,22 +30,22 @@ struct airfoil_geometry {
 
 // Pitot tube parameters.
 struct pitot_tube_properties {
-  double pitot_pressure;  // pressure measured by Pitot tube (Pa)
-  double pitot_elevation; // elevation of Pitot tube above sea level (m)
+  double pitot_pressure;  // pressure measured by Pitot tube (Units: Pa)
+  double pitot_elevation; // elevation of Pitot tube above sea level (Units: m)
 };
 
 // Fluid properties.
 struct fluid_properties {
-  double pressure;    // atmospheric pressure
-  double temperature; // ambient temperature (Kelvin)
-  double elevation;   // elevation above sea level (m)
+  double pressure;    // atmospheric pressure (Units: hpa)
+  double temperature; // ambient temperature (Units: Kelvin)
+  double elevation;   // elevation above sea level (Units: m)
   double humidity;    // relative humidity
 };
 
 struct parameter_uncertainties {
-  struct airfoil_geometry airfoil_cfg;
-  struct pitot_tube_properties pt_cfg;
-  struct fluid_properties fluid_cfg;
+  struct airfoil_geometry airfoil_cfg; // Airfoil geometry parameters
+  struct pitot_tube_properties pt_cfg; // Pitot tube parameters.
+  struct fluid_properties fluid_cfg;   // Fluid properties.
 };
 
 static void load_parameters(struct parameter_uncertainties *parameters) {
@@ -133,9 +133,7 @@ static double calculate_lift_coefficient(struct airfoil_geometry *af_cfg) {
 // Function to calculate lift force using the Bernoulli equation
 static double calc_lift_force(double cl, double rho, double v, double chord,
                               double length) {
-  // Bernoulli's equation: https://web.mit.edu/16.00/www/aec/flight.html
-  // https://www.grc.nasa.gov/www/k-12/rocket/lifteq.html
-
+  // Bernoulli's equation:
   // lift_force = Lift-Coeff * WingArea * .5 * density * Velocity ^ 2
 
   double lift_force = cl * chord * length * 0.5 * rho * v * v;
@@ -156,7 +154,7 @@ static double calc_air_density(const double temperature, const double pressure,
   return air_density;
 }
 
-// // Function to calculate the fluid velocity around the airfoil
+// Function to calculate the fluid velocity around the airfoil
 static double calc_wind_speed_pitotTube(const double pitot_pressure,
                                         const double static_pressure,
                                         const double fluid_density) {
@@ -173,17 +171,20 @@ int main(int argc, char *argv[]) {
   // Load the parameter values.
   load_parameters(&parameters);
 
-  // Calculations
+  // Calculate lift coefficient
   double lift_coeff = calculate_lift_coefficient(&parameters.airfoil_cfg);
 
+  // Calculate air density
   double air_density = calc_air_density(
       parameters.fluid_cfg.temperature, parameters.pt_cfg.pitot_pressure,
       parameters.fluid_cfg.humidity, parameters.pt_cfg.pitot_elevation);
 
+  // Calculate wind speed
   double wind_speed =
       calc_wind_speed_pitotTube(parameters.pt_cfg.pitot_pressure,
                                 parameters.fluid_cfg.pressure, air_density);
 
+  // Calculate lift_force using Bernoulli's principle
   double lift_force = calc_lift_force(lift_coeff, air_density, wind_speed,
                                       parameters.airfoil_cfg.chord_length,
                                       parameters.airfoil_cfg.airfoil_length);
