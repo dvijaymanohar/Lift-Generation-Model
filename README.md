@@ -1,4 +1,4 @@
-# lift-generation-model
+# C model for the lift generation of an airfoil
 
 ## Introduction
 
