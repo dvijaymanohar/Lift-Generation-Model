@@ -50,8 +50,7 @@ struct parameter_uncertainties {
 };
 
 static void load_parameters(struct parameter_uncertainties *const parameters) {
-  // Pa, +/- 1000 Pa (source:
-  // https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
+  // Pa, +/- 1000 Pa (source: https://www.engineeringtoolbox.com/standard-atmosphere-d_604.html)
   double empirical_pressure_values[] = {895300, 896100, 898548, 900108,
                                         902000, 904167}; // atmospheric pressure
 
@@ -59,11 +58,9 @@ static void load_parameters(struct parameter_uncertainties *const parameters) {
       895500, 896500, 898648,
       900200, 902020, 904567}; // pressure measured by Pitot tube (Pa)
 
-  // deg C, +/- 1 deg C (source:
-  // https://www.engineeringtoolbox.com/air-properties-d_156.html)
+  // deg C, +/- 1 deg C (source: https://www.engineeringtoolbox.com/air-properties-d_156.html)
   double empirical_temperature_values[] = {278.48, 279.54, 281.65,
                                            283.14, 283.56, 284.78};
-  // ambient temperature (Kelvin)
 
   double empirical_humidity_values[] = {0.34, 0.38, 0.41,
                                         0.54, 0.6,  0.65}; // relative humidity
@@ -111,11 +108,11 @@ calculate_lift_coefficient(const struct airfoil_geometry *const af_cfg) {
   theta = af_cfg->angle_of_attack * PI / 180.0;
 
   // The formula for calculating the thickness distribution of an airfoil is as
-  // follows: t = (thickness / 0.2) * [0.2969 * sqrt(x / c) - 0.1260 * (x / c) -
-  // 0.3516 * (x / c) ^ 2 + 0.2843 * (x / c) ^ 3 - 0.1015 * (x / c) ^ 4] t is
-  // the airfoil thickness at a given point along the chord length (x). c is the
-  // chord length of the airfoil. x is the distance along the chord length from
-  // the leading edge to the desired point.
+  // follows: 
+  // t = (thickness / 0.2) * [0.2969 * sqrt(x / c) - 0.1260 * (x / c) - 0.3516 * (x / c) ^ 2 + 0.2843 * (x / c) ^ 3 - 0.1015 * (x / c) ^ 4] 
+  // t is the airfoil thickness at a given point along the chord length (x).
+  // c is the chord length of the airfoil. 
+  // x is the distance along the chord length from the leading edge to the desired point.
 
   thickness_distribution =
       (af_cfg->thickness / 0.2) *
@@ -124,14 +121,13 @@ calculate_lift_coefficient(const struct airfoil_geometry *const af_cfg) {
        0.2843 * pow(af_cfg->chord_length, 3.0) -
        0.1015 * pow(af_cfg->chord_length, 4.0));
 
-  // The formula for calculating the Drag Coefficient at Zero Lift Pitching
-  // Moment. dcp = 2.0 * thickness_distribution / chord_length;
+  // The formula for calculating the Drag Coefficient at Zero Lift Pitching Moment. 
+  // dcp = 2.0 * thickness_distribution / chord_length;
 
   dcp = 2.0 * thickness_distribution / af_cfg->chord_length;
 
   // The formula for calculating the lift_coefficient
-  // lift_coefficient = (2.0 * PI * (camber_line / chord_length) + DCP) *
-  // sine(angle)
+  // lift_coefficient = (2.0 * PI * (camber_line / chord_length) + DCP) * sine(angle)
 
   lift_coefficient =
       (2.0 * PI * (camber_line / af_cfg->chord_length) + dcp) * sin(theta);
@@ -165,9 +161,9 @@ static double calc_air_density(const double temperature, const double pressure,
 
   double e = relative_humidity * 6.112 * exp((17.67 * T) / (T + 243.5));
 
-  // Formula to calculate the air density, the ideal gas law in combination with
-  // the relative humidity and the barometric formula can be used ρ = (P / (Gas
-  // Constant * T)) * (e * 2.1674) / T)
+  // Formula to calculate the air density: The ideal gas law in combination with
+  // the relative humidity and the barometric formula.
+  // ρ = (P / (Gas Constant * T)) * (e * 2.1674) / T)
   double air_density = (pressure * 100) / (gas_constant * T) - (e * 2.1674) / T;
 
   return air_density;
