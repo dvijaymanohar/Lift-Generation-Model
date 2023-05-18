@@ -53,4 +53,5 @@ dkms.conf
 
 *.DS_Store
 *.out
-
+checks.json
+build
