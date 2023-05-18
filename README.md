@@ -14,19 +14,9 @@ Refer to the below section for a quick reference to Bernoulli's equation.
 
 ## Bernoulli's equation
 
-Bernoulli's equation is a fundamental principle in fluid dynamics that relates the pressure, velocity, and elevation of a fluid flowing along a streamline. It describes the conservation of energy for an ideal, incompressible fluid.
+Bernoulli's equation is a fundamental principle in fluid dynamics that relates the pressure, velocity, and elevation of a fluid flowing along a streamline. Bernoulli's equation can be written as:
 
-Bernoulli's equation can be written as:
-
-> P + 0.5 \* ρ \* v^2 + ρ \* g \* h = constant
-
-Where:
-
-P is the pressure of the fluid.
-ρ is the density of the fluid.
-v is the velocity of the fluid.
-g is the acceleration due to gravity.
-h is the height or elevation of the fluid.
+> lift_force = Lift Coefficient \* Chord Length \* Airfoil Length \* 0.5 \* Air Density \* Wind Speed \* Wind Speed;
 
 ## Repository Tree Structure
 
