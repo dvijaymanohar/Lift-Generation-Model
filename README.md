@@ -16,7 +16,7 @@ Refer to the below section for a quick reference to Bernoulli's equation.
 
 Bernoulli's equation is a fundamental principle in fluid dynamics that relates the pressure, velocity, and elevation of a fluid flowing along a streamline. Bernoulli's equation can be written as:
 
-> Lift Force = Lift Coefficient \* Chord Length \* Airfoil Length \* 0.5 \* Air Density \* Wind Speed \* Wind Speed;
+> Lift force generated on an airfoil = Lift Coefficient \* Chord Length \* Airfoil Length \* 0.5 \* Air Density \* Wind Speed \* Wind Speed;
 
 Where:
 
